@@ -15,7 +15,7 @@ const unsigned long MAX_TIME = 10; // Limite de temps ouveture ou fermeture avan
 const int DAY = 8;
 const int NIGHT = 19;
 const boolean DEBUG = true;
-const int CHECK_FREQUENCY = 10000 // Fréquence de vérification de la nuit ou du jour (en ms)
+const int CHECK_FREQUENCY = 10000; // Fréquence de vérification de la nuit ou du jour (en ms)
 
 int val_butee_up = 0;
 int val_butee_bottom = 0;
