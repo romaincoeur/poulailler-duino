@@ -11,11 +11,13 @@ const int BUTEE_UP = 12;
 const int BUTTE_BOTTOM = 11;
 const int MOTEUR_UP = 10;
 const int MOTEUR_DOWN = 9;
-const unsigned long MAX_TIME = 10; // Limite de temps ouveture ou fermeture avant anomalie en secondes
+const int MANUAL_UP = 8; // Set the door open in a manual mode
+const int MANUAL_DOWN = 7; // Set the door closed in a manual mode
+const unsigned long MAX_TIME = 20; // Limite de temps ouveture ou fermeture avant anomalie en secondes
 const int DAY = 8;
 const int NIGHT = 19;
 const boolean DEBUG = true;
-const int CHECK_FREQUENCY = 10000; // Fréquence de vérification de la nuit ou du jour (en ms)
+const int CHECK_FREQUENCY = 1000; // Fréquence de vérification de la nuit ou du jour (en ms)
 
 int val_butee_up = 0;
 int val_butee_bottom = 0;
@@ -35,10 +37,17 @@ void setup() {
     // following line sets the RTC to the date & time this sketch was compiled
     RTC.adjust(DateTime(__DATE__, __TIME__));
   }
-  
+
+  if (DEBUG) {
+    if (doorState) Serial.println("Door open");
+    else Serial.println("Door closed");
+  }
+
   pinMode(LED, OUTPUT);   // tell Arduino LED is an output
   pinMode(BUTEE_UP, INPUT); // and BUTTON is an input
   pinMode(BUTTE_BOTTOM, INPUT);
+  pinMode(MANUAL_UP, INPUT);
+  pinMode(MANUAL_DOWN, INPUT);
   pinMode(MOTEUR_UP, OUTPUT);
   pinMode(MOTEUR_DOWN, OUTPUT);
 }
@@ -47,11 +56,11 @@ void setup() {
 bool openDoor() {
   if (DEBUG) logEvent("Open Door");
   DateTime start = RTC.now();
-  while (state_butee_up==0) {
+  while (state_butee_up == 0) {
     val_butee_up = digitalRead(BUTEE_UP);
     if (val_butee_up == HIGH) state_butee_up = 1;
     digitalWrite(MOTEUR_UP, HIGH);
-    if (start.unixtime()+MAX_TIME <= RTC.now().unixtime()) return false;
+    if (start.unixtime() + MAX_TIME <= RTC.now().unixtime()) return false;
   }
   doorState = 1;
   state_butee_up = 0;
@@ -62,11 +71,11 @@ bool openDoor() {
 bool closeDoor() {
   if (DEBUG) logEvent("Close Door");
   DateTime start = RTC.now();
-  while (state_butee_bottom==0) {
+  while (state_butee_bottom == 0) {
     val_butee_bottom = digitalRead(BUTTE_BOTTOM);
     if (val_butee_bottom == HIGH) state_butee_bottom = 1;
     digitalWrite(MOTEUR_DOWN, HIGH);
-    if (start.unixtime()+MAX_TIME <= RTC.now().unixtime()) return false;
+    if (start.unixtime() + MAX_TIME <= RTC.now().unixtime()) return false;
   }
   doorState = 0;
   state_butee_bottom = 0;
@@ -75,6 +84,7 @@ bool closeDoor() {
 }
 
 void die() {
+  if (DEBUG) logEvent("Dying...");
   digitalWrite(MOTEUR_DOWN, LOW);
   digitalWrite(MOTEUR_UP, LOW);
   while (true) {
@@ -83,33 +93,43 @@ void die() {
     digitalWrite(LED, LOW);
     delay(300);
   }
-  
+
 }
 
 
-void loop(){
-  if (RTC.now().hour() >= DAY && RTC.now().hour() < NIGHT && doorState == 0) {
-    if (!openDoor())
-      die();
-  } else if ((RTC.now().hour() >= NIGHT || RTC.now().hour() < DAY) && doorState == 1) {
-    if (!closeDoor())
-      die();
+void loop() {
+  if (digitalRead(MANUAL_UP) || digitalRead(MANUAL_DOWN)) {
+    // Manual mode
+    if (digitalRead(MANUAL_UP) && doorState == 0) {
+      if (!openDoor()) die();
+    } else if (digitalRead(MANUAL_DOWN) && doorState == 1) {
+      if (!closeDoor()) die();
+    }
+  } else {
+    // Auto mode
+    int now = RTC.now().hour();
+    if (((now >= DAY && now < NIGHT) || digitalRead(MANUAL_UP) )&& doorState == 0) {
+      if (!openDoor()) die();
+    } else if ((now >= NIGHT || now < DAY || digitalRead(MANUAL_DOWN)) && doorState == 1) {
+      if (!closeDoor()) die();
+    }
   }
+  
   delay(CHECK_FREQUENCY);
 }
 
 
 void logEvent(String message)
 {
-   showTime(RTC.now().unixtime());
-   Serial.print(" - ");
-   Serial.print(message);
-   Serial.println();
+  showTime(RTC.now().unixtime());
+  Serial.print(" - ");
+  Serial.print(message);
+  Serial.println();
 }
 
 
-void showTime(time_t t){
-  // display the given time 
+void showTime(time_t t) {
+  // display the given time
   Serial.print(day(t));
   Serial.print(" ");
   Serial.print(month(t));
@@ -121,10 +141,10 @@ void showTime(time_t t){
   printDigits(second(t));
 }
 
-void printDigits(int digits){
+void printDigits(int digits) {
   // utility function for digital clock display: prints preceding colon and leading 0
   Serial.print(":");
-  if(digits < 10)
+  if (digits < 10)
     Serial.print('0');
   Serial.print(digits);
 }
