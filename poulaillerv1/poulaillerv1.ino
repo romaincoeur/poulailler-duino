@@ -13,10 +13,10 @@ const int MOTEUR_UP = 10;
 const int MOTEUR_DOWN = 9;
 const int MANUAL_UP = 8; // Set the door open in a manual mode
 const int MANUAL_DOWN = 7; // Set the door closed in a manual mode
-const unsigned long MAX_TIME = 20; // Limite de temps ouveture ou fermeture avant anomalie en secondes
-const int DAY = 8;
-const int NIGHT = 19;
-const boolean DEBUG = true;
+const unsigned long MAX_TIME = 10; // Limite de temps ouveture ou fermeture avant anomalie en secondes
+const int DAY = 7;
+const int NIGHT = 22;
+const boolean DEBUG = false;
 const int CHECK_FREQUENCY = 1000; // Fréquence de vérification de la nuit ou du jour (en ms)
 
 int val_butee_up = 0;
@@ -25,7 +25,7 @@ int old_val_butee_up = 0; // old variables store the previous values
 int old_val_butee_bottom = 0;
 int state_butee_up = 0;	// 0 = Butee off and 1 = Butee on
 int state_butee_bottom = 0;
-int doorState = 0;          // 0 closed and 1 open
+int doorState = 1;          // 0 closed and 1 open
 
 
 void setup() {
@@ -60,7 +60,8 @@ bool openDoor() {
     val_butee_up = digitalRead(BUTEE_UP);
     if (val_butee_up == HIGH) state_butee_up = 1;
     digitalWrite(MOTEUR_UP, HIGH);
-    if (start.unixtime() + MAX_TIME <= RTC.now().unixtime()) return false;
+    if (start.unixtime() + MAX_TIME <= RTC.now().unixtime()) return false; // Unix
+    // if (start.second() + MAX_TIME <= RTC.now().second()) return false; // Windows
   }
   doorState = 1;
   state_butee_up = 0;
@@ -75,7 +76,8 @@ bool closeDoor() {
     val_butee_bottom = digitalRead(BUTTE_BOTTOM);
     if (val_butee_bottom == HIGH) state_butee_bottom = 1;
     digitalWrite(MOTEUR_DOWN, HIGH);
-    if (start.unixtime() + MAX_TIME <= RTC.now().unixtime()) return false;
+    if (start.unixtime() + MAX_TIME <= RTC.now().unixtime()) return false; // Unix
+    // if (start.second() + MAX_TIME <= RTC.now().second()) return false; // Windows
   }
   doorState = 0;
   state_butee_bottom = 0;
@@ -121,7 +123,8 @@ void loop() {
 
 void logEvent(String message)
 {
-  showTime(RTC.now().unixtime());
+  showTime(RTC.now().unixtime()); // Unix
+  // showTime(RTC.now().second()); // Windows
   Serial.print(" - ");
   Serial.print(message);
   Serial.println();
