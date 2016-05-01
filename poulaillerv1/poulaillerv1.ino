@@ -14,9 +14,9 @@ const int MOTEUR_DOWN = 9;
 const int MANUAL_UP = 8; // Set the door open in a manual mode
 const int MANUAL_DOWN = 7; // Set the door closed in a manual mode
 const unsigned long MAX_TIME = 10; // Limite de temps ouveture ou fermeture avant anomalie en secondes
-const int DAY = 7;
-const int NIGHT = 22;
-const boolean DEBUG = false;
+const int DAY = 6;
+const int NIGHT = 23;
+const boolean DEBUG = true;
 const int CHECK_FREQUENCY = 1000; // Fréquence de vérification de la nuit ou du jour (en ms)
 
 int val_butee_up = 0;
@@ -32,13 +32,14 @@ void setup() {
   if (DEBUG) Serial.begin(57600);
   Wire.begin();
   RTC.begin();
-  if (! RTC.isrunning()) {
+  if (!RTC.isrunning()) {
     if (DEBUG) Serial.println("RTC is NOT running!");
     // following line sets the RTC to the date & time this sketch was compiled
     RTC.adjust(DateTime(__DATE__, __TIME__));
   }
 
   if (DEBUG) {
+    logEvent("");
     if (doorState) Serial.println("Door open");
     else Serial.println("Door closed");
   }
@@ -100,15 +101,19 @@ void die() {
 
 
 void loop() {
+  //if (DEBUG) logEvent("");
   if (digitalRead(MANUAL_UP) || digitalRead(MANUAL_DOWN)) {
     // Manual mode
     if (digitalRead(MANUAL_UP) && doorState == 0) {
+      if (DEBUG) logEvent("MANUAL UP MODE");
       if (!openDoor()) die();
     } else if (digitalRead(MANUAL_DOWN) && doorState == 1) {
+      if (DEBUG) logEvent("MANUAL DOWN MODE");
       if (!closeDoor()) die();
     }
   } else {
     // Auto mode
+    if (DEBUG) logEvent("AUTO MODE");
     int now = RTC.now().hour();
     if (((now >= DAY && now < NIGHT) || digitalRead(MANUAL_UP) )&& doorState == 0) {
       if (!openDoor()) die();
