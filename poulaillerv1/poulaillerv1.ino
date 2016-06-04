@@ -16,7 +16,7 @@ const int MANUAL_DOWN = 7; // Set the door closed in a manual mode
 const unsigned long MAX_TIME = 10; // Limite de temps ouveture ou fermeture avant anomalie en secondes
 const int DAY = 6;
 const int NIGHT = 23;
-const boolean DEBUG = true;
+const boolean DEBUG = false;
 const int CHECK_FREQUENCY = 1000; // Fréquence de vérification de la nuit ou du jour (en ms)
 
 int val_butee_up = 0;
@@ -25,7 +25,7 @@ int old_val_butee_up = 0; // old variables store the previous values
 int old_val_butee_bottom = 0;
 int state_butee_up = 0;	// 0 = Butee off and 1 = Butee on
 int state_butee_bottom = 0;
-int doorState = 1;          // 0 closed and 1 open
+int doorState = 0;          // 0 closed and 1 open
 
 
 void setup() {
@@ -101,7 +101,6 @@ void die() {
 
 
 void loop() {
-  //if (DEBUG) logEvent("");
   if (digitalRead(MANUAL_UP) || digitalRead(MANUAL_DOWN)) {
     // Manual mode
     if (digitalRead(MANUAL_UP) && doorState == 0) {
@@ -115,9 +114,11 @@ void loop() {
     // Auto mode
     if (DEBUG) logEvent("AUTO MODE");
     int now = RTC.now().hour();
-    if (((now >= DAY && now < NIGHT) || digitalRead(MANUAL_UP) )&& doorState == 0) {
-      if (!openDoor()) die();
-    } else if ((now >= NIGHT || now < DAY || digitalRead(MANUAL_DOWN)) && doorState == 1) {
+    if (now >= DAY && now < NIGHT) {
+      if (doorState==0) {
+        if (!openDoor()) die();
+      }
+    } else if (doorState == 1) {
       if (!closeDoor()) die();
     }
   }
